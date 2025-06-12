@@ -17,9 +17,16 @@ See [kontext-chat.replicate.dev](https://kontext-chat.replicate.dev/) for a live
    - Sign up at https://replicate.com/ and get your REPLICATE_API_TOKEN from your account settings at https://replicate.com/account/api-tokens.
 
 1. Set up your local environment:
-   - Create a .dev.vars file in the project root (already present in this repo) and add your token:
+   - Create a .dev.vars file in the project root (copy from .dev.vars.example) and configure:
      ```
      REPLICATE_API_TOKEN=your-token-here
+     REPLICATE_MODEL=black-forest-labs/flux-kontext-pro
+     REPLICATE_MODELS=[{"name": "FLUX.1 Kontext Pro", "value": "black-forest-labs/flux-kontext-pro"}, {"name": "FLUX.1 Schnell", "value": "black-forest-labs/flux-schnell"}]
+     OPENAI_API_KEY=your-openai-api-key-here
+     AWS_ACCESS_KEY_ID=your-aws-access-key-id
+     AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
+     AWS_REGION=us-east-1
+     AWS_BUCKET_NAME=your-s3-bucket-name
      ```
 
 1. Start the local dev server:
@@ -35,9 +42,16 @@ See [kontext-chat.replicate.dev](https://kontext-chat.replicate.dev/) for a live
    npx wrangler login
    ```
 
-1. Set your Replicate API token as a secret:
+1. Set environment variables as secrets:
    ```sh
    npx wrangler secret put REPLICATE_API_TOKEN
+   npx wrangler secret put REPLICATE_MODEL
+   npx wrangler secret put REPLICATE_MODELS
+   npx wrangler secret put OPENAI_API_KEY
+   npx wrangler secret put AWS_ACCESS_KEY_ID
+   npx wrangler secret put AWS_SECRET_ACCESS_KEY
+   npx wrangler secret put AWS_REGION
+   npx wrangler secret put AWS_BUCKET_NAME
    ```
 
 1. Deploy:
@@ -49,5 +63,8 @@ See [kontext-chat.replicate.dev](https://kontext-chat.replicate.dev/) for a live
 ## Notes
 
 - The frontend is served from the public/ directory.
+- The app supports multiple Replicate models through the REPLICATE_MODELS environment variable.
+- Users can select different models from the dropdown in both upload and chat modes.
+- Model selection is persistent during the chat session.
 - The backend is a Cloudflare Worker (entry: src/index.ts).
 - The app requires a valid REPLICATE_API_TOKEN to function.

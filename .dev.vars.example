@@ -1,0 +1,17 @@
+# Replicate API Configuration
+REPLICATE_API_TOKEN=your-replicate-api-token-here
+REPLICATE_MODEL=black-forest-labs/flux-kontext-pro
+
+# Available models in JSON format
+# Each model should have 'name' (display name) and 'value' (actual model identifier)
+REPLICATE_MODELS=[{"name":"Flux.1 Kontext Pro","value":"black-forest-labs/flux-kontext-pro"},{"name":"Flux.1 Kontext Max","value":"black-forest-labs/flux-kontext-max"}]
+
+# OpenAI API Configuration (for translation)
+OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_BASE_URL=https://api.openai.com/v1
+
+# AWS S3 Configuration (for image storage)
+AWS_ACCESS_KEY_ID=your-aws-access-key-id
+AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
+AWS_REGION=us-east-1
+AWS_BUCKET_NAME=your-s3-bucket-name

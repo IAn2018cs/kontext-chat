@@ -12,6 +12,7 @@ interface Env {
         AWS_REGION: string;
         AWS_BUCKET_NAME: string;
         REPLICATE_MODEL: string;
+        REPLICATE_MODELS: string; // JSON 格式的模型列表
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -127,12 +128,32 @@ async function translatePromptToEnglish(
         }
 }
 
+// Add a new route for getting available models
+app.get('/models', async (c) => {
+        try {
+                // Parse the models from environment variable
+                const modelsJson = c.env.REPLICATE_MODELS;
+                if (!modelsJson) {
+                        return c.json({ error: 'No models configured' }, 500);
+                }
+                
+                const models = JSON.parse(modelsJson);
+                return c.json({ models });
+        } catch (error) {
+                console.error('Error parsing models:', error);
+                return c.json({ error: 'Failed to get models' }, 500);
+        }
+});
+
 app.post('/generate-image', async (c) => {
         try {
                 const replicate = new Replicate({ auth: c.env.REPLICATE_API_TOKEN });
-                const model = c.env.REPLICATE_MODEL as `${string}/${string}` | `${string}/${string}:${string}`; // Use environment variable with type assertion
+                
+                const { prompt, input_image, model } = await c.req.json();
 
-                const { prompt, input_image } = await c.req.json();
+                // Use the model from request, fallback to default environment variable
+                const selectedModel = model || c.env.REPLICATE_MODEL;
+                const replicateModel = selectedModel as `${string}/${string}` | `${string}/${string}:${string}`;
 
                 // Translate prompt to English if needed
                 const translatedPrompt = await translatePromptToEnglish(
@@ -143,9 +164,10 @@ app.post('/generate-image', async (c) => {
 
                 console.log('Original prompt:', prompt);
                 console.log('Translated prompt:', translatedPrompt);
+                console.log('Using model:', selectedModel);
 
                 // Generate image with Replicate using translated prompt
-                const output = await replicate.run(model, {
+                const output = await replicate.run(replicateModel, {
                         input: {
                                 prompt: translatedPrompt,
                                 input_image,

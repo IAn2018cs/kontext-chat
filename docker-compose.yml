@@ -18,5 +18,6 @@ services:
       - AWS_REGION=${AWS_REGION}
       - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
       - REPLICATE_MODEL=${REPLICATE_MODEL}
+      - REPLICATE_MODELS=${REPLICATE_MODELS}
       # 如果您的应用或 wrangler dev 需要其他环境变量，请在此处添加
       # - NODE_ENV=development

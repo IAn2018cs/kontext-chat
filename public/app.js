@@ -47,6 +47,10 @@ function App() {
   const [abortController, setAbortController] = React.useState(null);
   // New: track if a starter image was used (for future logic if needed)
   const [starterUsed, setStarterUsed] = React.useState(false);
+  // New: model selection state
+  const [availableModels, setAvailableModels] = React.useState([]);
+  const [selectedModel, setSelectedModel] = React.useState('');
+  const [modelsLoading, setModelsLoading] = React.useState(false);
 
   // Simple desktop check
   const [isDesktop, setIsDesktop] = React.useState(false);
@@ -55,6 +59,31 @@ function App() {
     checkDesktop();
     window.addEventListener('resize', checkDesktop);
     return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
+
+  // Load available models on component mount
+  React.useEffect(() => {
+    const loadModels = async () => {
+      setModelsLoading(true);
+      try {
+        const response = await fetch('/models');
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableModels(data.models || []);
+          // Set first model as default if available
+          if (data.models && data.models.length > 0) {
+            setSelectedModel(data.models[0].value);
+          }
+        } else {
+          console.error('Failed to load models');
+        }
+      } catch (error) {
+        console.error('Error loading models:', error);
+      } finally {
+        setModelsLoading(false);
+      }
+    };
+    loadModels();
   }, []);
 
   // Ref for chat container and file input
@@ -295,9 +324,11 @@ function App() {
       console.log('发送请求到 /generate-image...');
       const requestBody = {
         prompt: input,
-        input_image: imageDataUrl
+        input_image: imageDataUrl,
+        model: selectedModel // Include selected model
       };
       console.log('请求体大小:', JSON.stringify(requestBody).length);
+      console.log('使用模型:', selectedModel);
 
       const res = await fetch('/generate-image', {
         method: 'POST',
@@ -462,6 +493,30 @@ function App() {
                 </p>
               </div>
 
+              {/* Model Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  选择模型
+                </label>
+                {modelsLoading ? (
+                  <div className="bg-gray-100 rounded-lg p-3 text-center text-gray-500">
+                    加载模型中...
+                  </div>
+                ) : (
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900"
+                  >
+                    {availableModels.map((model) => (
+                      <option key={model.value} value={model.value}>
+                        {model.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
               <div
                 className={`border-2 border-dashed rounded-2xl p-6 md:p-12 text-center cursor-pointer mb-12 ${
                   dragActive
@@ -584,6 +639,22 @@ function App() {
 
             {/* Input Area */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:relative md:border-t" style={{paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'}}>
+              {/* Model Selection in Chat Mode */}
+              <div className="mb-3 max-w-4xl mx-auto">
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  disabled={loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {availableModels.map((model) => (
+                    <option key={model.value} value={model.value}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
               <form onSubmit={handleSend} className="flex items-end gap-3 max-w-4xl mx-auto">
                 <div className="flex-1 relative">
                   <div className="bg-gray-50 rounded-3xl px-4 py-3 pr-12 border-2 border-transparent focus-within:border-orange-500 transition-colors">
