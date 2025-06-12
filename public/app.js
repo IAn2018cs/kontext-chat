@@ -21,21 +21,6 @@ const starterImages = [
   }
 ]
 
-function PoweredByBanner() {
-  return (
-    <div className="bg-orange-500 text-white text-center text-base md:text-lg py-2">
-      <a
-        href="https://replicate.com/black-forest-labs/flux-kontext-pro?utm_source=project&utm_campaign=kontext-chat"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline"
-      >
-        由 FLUX.1 Kontext on Replicate 驱动
-      </a>
-    </div>
-  );
-}
-
 function App() {
   // State for upload vs chat mode
   const [showUpload, setShowUpload] = React.useState(true);
@@ -51,9 +36,35 @@ function App() {
   const [availableModels, setAvailableModels] = React.useState([]);
   const [selectedModel, setSelectedModel] = React.useState('');
   const [modelsLoading, setModelsLoading] = React.useState(false);
+  
+  // Theme state
+  const [isDarkMode, setIsDarkMode] = React.useState(false);
 
   // Simple desktop check
   const [isDesktop, setIsDesktop] = React.useState(false);
+  
+  // Toggle theme function
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+    document.documentElement.classList.toggle('dark');
+  };
+  
+  // Initialize theme from localStorage
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    // 默认使用暗色主题，除非用户明确保存了亮色主题设置
+    const shouldBeDark = savedTheme === 'light' ? false : true;
+    
+    setIsDarkMode(shouldBeDark);
+    if (shouldBeDark) {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+  
+  // Save theme to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
   React.useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
     checkDesktop();
@@ -89,7 +100,6 @@ function App() {
   // Ref for chat container and file input
   const chatContainerRef = React.useRef(null);
   const fileInputRef = React.useRef(null);
-  const textareaRef = React.useRef(null);
 
   // Scroll to bottom when messages change
   React.useEffect(() => {
@@ -453,7 +463,12 @@ function App() {
 
   // Handle image click for full screen
   function handleImageClick(imageUrl) {
-    window.open(imageUrl, '_blank');
+    console.log('图片点击事件触发，URL:', imageUrl);
+    if (imageUrl) {
+      window.open(imageUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      console.error('图片URL为空');
+    }
   }
 
   // Attach drag events when in upload mode
@@ -473,40 +488,67 @@ function App() {
   }, [showUpload]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e04f0c] to-[#f47020] md:overflow-auto overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#e04f0c] via-[#f47020] to-[#ff8c42] md:overflow-auto overflow-hidden relative dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Theme Toggle Button */}
+      <button
+        onClick={toggleTheme}
+        className="theme-toggle"
+        title={isDarkMode ? '切换到亮色主题' : '切换到暗色主题'}
+      >
+        {isDarkMode ? (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+        ) : (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        )}
+      </button>
+      
+      {/* Floating background elements for modern effect */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-white/5 rounded-full blur-3xl floating-animation dark:bg-gray-400/5"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-300/10 rounded-full blur-3xl floating-animation dark:bg-blue-400/5" style={{animationDelay: '2s'}}></div>
+      </div>
+      
       {/* Main Content */}
-      <div className="min-h-screen flex flex-col md:flex md:items-center h-screen md:h-auto">
+      <div className="min-h-screen flex flex-col md:flex md:items-center h-screen md:min-h-screen relative z-10 md:py-4">
         {showUpload ? (
           /* Upload Section */
-          <div className="w-full md:max-w-4xl bg-white md:shadow-md flex flex-col h-screen md:h-auto overflow-hidden md:overflow-visible">
+          <div className="w-full md:w-4/5 upload-card md:rounded-3xl flex flex-col h-screen md:h-auto overflow-hidden md:overflow-visible md:my-8">
             {/* Logo */}
-            <div className="p-4 md:p-2 bg-white border-b border-gray-200">
-              <img src="/kontext-chat-rainbow.png" className="w-1/3 md:w-1/4 mx-auto" alt="Kontext Chat" />
+            <div className="p-6 md:p-4 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 md:rounded-t-3xl fade-in">
+              <h1 className="app-title floating-animation">Amber Kontext Chat</h1>
             </div>
 
             {/* Upload Area */}
-            <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto md:overflow-visible pb-32 md:pb-6" style={{paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))'}}>
+            <div className="flex-1 flex flex-col p-6 md:p-8 overflow-y-auto md:overflow-visible pb-32 md:pb-8 fade-in" style={{paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))', animationDelay: '0.1s'}}>
               {/* Intro Text */}
-              <div className="text-center mb-6">
-                <p className="text-gray-700 text-base md:text-lg">
-                  通过聊天编辑图片。
+              <div className="text-center mb-8 fade-in" style={{animationDelay: '0.2s'}}>
+                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-3">
+                  AI 图片编辑器
+                </h1>
+                <p className="text-gray-600 text-lg md:text-xl font-medium">
+                  通过聊天编辑图片，让AI帮你实现创意想法
                 </p>
               </div>
 
               {/* Model Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  选择模型
+              <div className="mb-8 fade-in" style={{animationDelay: '0.3s'}}>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  选择AI模型
                 </label>
                 {modelsLoading ? (
-                  <div className="bg-gray-100 rounded-lg p-3 text-center text-gray-500">
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 text-center text-gray-500 border border-gray-200 pulse-glow">
+                    <div className="inline-block w-5 h-5 border-2 border-gray-400 border-t-orange-500 rounded-full animate-spin mr-2"></div>
                     加载模型中...
                   </div>
                 ) : (
                   <select
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900"
+                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 font-medium transition-all duration-200 hover:border-orange-300 hover:shadow-lg"
                   >
                     {availableModels.map((model) => (
                       <option key={model.value} value={model.value}>
@@ -518,19 +560,23 @@ function App() {
               </div>
 
               <div
-                className={`border-2 border-dashed rounded-2xl p-6 md:p-12 text-center cursor-pointer mb-12 ${
+                className={`border-2 border-dashed rounded-3xl p-8 md:p-16 text-center cursor-pointer mb-12 transition-all duration-300 fade-in ${
                   dragActive
-                    ? 'border-green-400 bg-green-50 text-green-700'
-                    : 'border-gray-300 bg-gray-50 hover:border-orange-400 hover:bg-orange-50 text-gray-700 hover:text-orange-700'
+                    ? 'border-green-400 bg-gradient-to-br from-green-50 to-emerald-50 text-green-700 glow-effect pulse-glow'
+                    : 'border-gray-300 bg-gradient-to-br from-gray-50 to-slate-50 hover:border-orange-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-red-50 text-gray-700 hover:text-orange-700 hover:glow-effect hover:shadow-2xl'
                 }`}
                 onClick={() => fileInputRef.current?.click()}
+                style={{animationDelay: '0.4s'}}
               >
                 <div className="upload-content">
-                  <svg className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                  </svg>
-                  <h3 className="text-lg md:text-xl mb-1 md:mb-2 font-semibold">上传图片开始</h3>
-                  <p className="text-base md:text-lg opacity-80">将图片拖放到此处，或点击浏览</p>
+                  <div className="relative">
+                    <svg className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 md:mb-6 opacity-70 transition-transform duration-300 hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <div className="absolute -inset-2 bg-gradient-to-r from-orange-400 to-red-400 rounded-full blur opacity-20 animate-pulse"></div>
+                  </div>
+                  <h3 className="text-xl md:text-2xl mb-2 md:mb-3 font-bold">上传图片开始创作</h3>
+                  <p className="text-lg md:text-xl opacity-80 font-medium">将图片拖放到此处，或点击浏览文件</p>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -542,21 +588,26 @@ function App() {
               </div>
 
               {/* Starter Images Section */}
-              <div className="text-center text-gray-600 text-base mb-4 font-medium">或选择一张初始图片：</div>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="text-center text-gray-700 text-lg mb-6 font-semibold fade-in" style={{animationDelay: '0.5s'}}>✨ 或选择一张精美的示例图片开始：</div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 fade-in" style={{animationDelay: '0.6s'}}>
                 {starterImages.map((starter, idx) => (
                   <button
                     key={idx}
-                    className="aspect-square w-full rounded-xl overflow-hidden border-2 border-gray-200 hover:border-orange-400 focus:border-orange-500 transition-all shadow-sm bg-gray-50 group"
+                    className="aspect-square w-full rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-orange-400 focus:border-orange-500 transition-all duration-300 shadow-lg hover:shadow-2xl bg-gray-50 group relative transform hover:-translate-y-2"
                     onClick={() => handleStarterImageClick(starter)}
                     disabled={loading}
                     title={starter.suggestedPrompt}
+                    style={{animationDelay: `${0.7 + idx * 0.1}s`}}
                   >
                     <img
                       src={starter.imageUrl}
                       alt={starter.suggestedPrompt}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-200"
+                      className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute bottom-2 left-2 right-2 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 truncate backdrop-blur-sm bg-black/30 rounded px-2 py-1">
+                      {starter.suggestedPrompt}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -566,68 +617,82 @@ function App() {
           </div>
         ) : (
           /* Chat Section */
-          <div className="w-full md:max-w-4xl bg-white md:shadow-md overflow-hidden flex flex-col h-screen md:h-screen relative">
+          <div className="w-full chat-fullscreen flex flex-col h-screen overflow-hidden relative fade-in">
             {/* Chat Header with Logo */}
-            <div className="p-4 md:p-2 bg-white border-b border-gray-200 relative flex items-center flex-shrink-0">
+            <div className="p-6 md:desktop-input-padding bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 relative flex items-center flex-shrink-0 fade-in">
               <button
                 onClick={resetApp}
-                className="absolute left-4 w-8 h-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+                className="absolute left-6 md:left-12 w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
                 title="返回上传"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
               </button>
-              <img 
-                src="/kontext-chat-rainbow.png" 
-                className="w-1/3 md:w-1/4 mx-auto cursor-pointer hover:opacity-90 transition-opacity" 
-                alt="Kontext 聊天" 
+              <h1 
+                className="app-title floating-animation cursor-pointer hover:opacity-90 transition-all duration-200 hover:scale-105 flex-1" 
                 onClick={resetApp}
                 title="返回上传"
-              />
+                style={{fontSize: '1.5rem'}}
+              >
+                Amber Kontext Chat
+              </h1>
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-56 md:pb-6" ref={chatContainerRef}>
-              {messages.map((msg) => (
+            <div className="flex-1 overflow-y-auto p-6 md:desktop-chat-padding space-y-6 pb-56 md:pb-8" ref={chatContainerRef}>
+              {messages.map((msg, index) => (
                 <div
                   key={msg.id}
-                  className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'} fade-in`}
+                  style={{animationDelay: `${index * 0.1}s`}}
                 >
                   <div
-                    className={`relative max-w-sm md:max-w-md ${
+                    className={`relative max-w-sm md:max-w-4xl transition-all duration-300 hover:scale-[1.02] ${
                       msg.from === 'user'
-                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-3xl px-4 py-3'
+                        ? 'bg-gradient-to-br from-blue-500 via-purple-500 to-purple-600 text-white rounded-3xl px-5 py-4 shadow-lg hover:shadow-xl'
                         : msg.from === 'system'
-                        ? 'bg-blue-50 text-blue-800 rounded-2xl px-4 py-3 italic'
-                        : 'bg-gray-100 text-gray-800 rounded-2xl rounded-bl-md px-4 py-3'
+                        ? 'bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-800 rounded-2xl px-5 py-4 italic border border-blue-200 shadow-sm hover:shadow-lg'
+                        : 'glass-effect text-gray-800 rounded-2xl rounded-bl-md px-5 py-4 shadow-lg hover:shadow-xl'
                     }`}
                   >
                     {msg.type === 'image' && (
-                      <img
-                        src={msg.image}
-                        alt="生成的图片"
-                        className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => handleImageClick(msg.image)}
-                        onLoad={scrollToBottom}
-                      />
-                    )}
-                    {msg.type === 'loading' && (
-                      <div className="flex flex-col items-center gap-4 py-8 px-12">
-                        <div className="w-16 h-16 border-4 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div>
-                        <span className="text-gray-600">正在生成图片...</span>
+                      <div className="relative group cursor-pointer" onClick={() => handleImageClick(msg.image)}>
+                        <img
+                          src={msg.image}
+                          alt="生成的图片"
+                          className="max-w-xs md:max-w-2xl rounded-xl hover:opacity-95 transition-all duration-300 shadow-lg group-hover:shadow-xl"
+                          onLoad={scrollToBottom}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-all duration-300 flex items-center justify-center pointer-events-none">
+                          <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                          </svg>
+                        </div>
                       </div>
                     )}
-                    {msg.text && <div className="text-base md:text-lg">{msg.text}</div>}
+                    {msg.type === 'loading' && (
+                      <div className="flex flex-col items-center gap-6 py-10 px-16">
+                        <div className="relative">
+                          <div className="w-20 h-20 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin"></div>
+                          <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-r-red-400 rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-gray-700 font-medium text-lg">正在生成图片...</span>
+                          <div className="text-gray-500 text-sm mt-1">请稍候，AI正在为您创作</div>
+                        </div>
+                      </div>
+                    )}
+                    {msg.text && <div className="text-base md:text-lg leading-relaxed">{msg.text}</div>}
 
                     {/* Delete button for user messages */}
                     {msg.showDelete && (
                       <button
                         onClick={() => deleteFromMessage(msg.id)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                        className="absolute -top-3 -right-3 w-8 h-8 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
                         title="从此处删除并继续编辑"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
                       </button>
@@ -638,14 +703,14 @@ function App() {
             </div>
 
             {/* Input Area */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:relative md:border-t" style={{paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'}}>
+            <div className="fixed bottom-0 left-0 right-0 glass-effect border-t border-gray-200 p-6 md:desktop-input-padding md:relative md:border-t fade-in" style={{paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))', animationDelay: '0.3s'}}>
               {/* Model Selection in Chat Mode */}
-              <div className="mb-3 max-w-4xl mx-auto">
+              <div className="mb-4 max-w-none mx-auto">
                 <select
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
                   disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:border-orange-300 hover:shadow-lg"
                 >
                   {availableModels.map((model) => (
                     <option key={model.value} value={model.value}>
@@ -655,14 +720,14 @@ function App() {
                 </select>
               </div>
               
-              <form onSubmit={handleSend} className="flex items-end gap-3 max-w-4xl mx-auto">
+              <form onSubmit={handleSend} className="flex items-end gap-4 max-w-none mx-auto">
                 <div className="flex-1 relative">
-                  <div className="bg-gray-50 rounded-3xl px-4 py-3 pr-12 border-2 border-transparent focus-within:border-orange-500 transition-colors">
+                  <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-3xl px-5 py-4 pr-14 border-2 border-gray-200 focus-within:border-orange-500 focus-within:bg-white transition-all duration-200 hover:border-orange-300 shadow-sm focus-within:shadow-lg hover:shadow-lg">
                     <textarea
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="描述你的编辑..."
-                      className="w-full bg-transparent border-none outline-none resize-none text-base"
+                      placeholder="✨ 描述你想要的编辑效果..."
+                      className="w-full bg-transparent border-none outline-none resize-none text-base placeholder-gray-500 font-medium"
                       rows="1"
                       style={{ minHeight: '24px', maxHeight: '120px' }}
                       disabled={loading}
@@ -681,9 +746,9 @@ function App() {
                       <button
                         type="button"
                         onClick={cancelGeneration}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 pulse-glow"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                       </button>
@@ -691,9 +756,9 @@ function App() {
                       <button
                         type="submit"
                         disabled={!input.trim() || loading}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white rounded-full flex items-center justify-center transition-all duration-200 disabled:cursor-not-allowed"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-full flex items-center justify-center transition-all duration-200 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100 disabled:hover:shadow-lg"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                         </svg>
                       </button>
