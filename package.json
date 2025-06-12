@@ -17,6 +17,7 @@
 	},
 	"dependencies": {
 		"hono": "^4.7.10",
+		"openai": "^5.1.0",
 		"replicate": "^1.0.1"
 	}
 }

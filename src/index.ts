@@ -1,10 +1,13 @@
 import { Hono } from 'hono';
 import Replicate from 'replicate';
+import OpenAI from 'openai';
 
 interface Env {
         REPLICATE_API_TOKEN: string;
         CLOUDFLARE_ACCOUNT_ID: string;
         CLOUDFLARE_IMAGES_API_TOKEN: string;
+        OPENAI_API_KEY: string;
+        OPENAI_BASE_URL?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -56,6 +59,55 @@ async function uploadToCloudflareImages(
         }
 }
 
+// Helper function to translate prompt to English using OpenAI
+async function translatePromptToEnglish(
+        prompt: string,
+        openaiApiKey: string,
+        baseURL?: string
+): Promise<string> {
+        try {
+                // Check if the prompt is already in English (simple heuristic)
+                const englishPattern = /^[a-zA-Z0-9\s.,!?'"()-]+$/;
+                if (englishPattern.test(prompt)) {
+                        return prompt; // Already in English, no translation needed
+                }
+
+                const openai = new OpenAI({
+                        apiKey: openaiApiKey,
+                        baseURL: baseURL,
+                });
+
+                const response = await openai.chat.completions.create({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                                {
+                                        role: 'system',
+                                        content: 'You are a professional translator. Translate the given text to English. Only return the translated text, no explanations or additional content.'
+                                },
+                                {
+                                        role: 'user',
+                                        content: prompt
+                                }
+                        ],
+                        max_tokens: 500,
+                        temperature: 0.3,
+                });
+
+                const translatedPrompt = response.choices[0]?.message?.content?.trim();
+
+                if (!translatedPrompt) {
+                        console.warn('Translation failed, using original prompt');
+                        return prompt;
+                }
+
+                return translatedPrompt;
+        } catch (error) {
+                console.error('Error translating prompt:', error);
+                // Return original prompt if translation fails
+                return prompt;
+        }
+}
+
 app.post('/generate-image', async (c) => {
         try {
                 const replicate = new Replicate({ auth: c.env.REPLICATE_API_TOKEN });
@@ -63,15 +115,25 @@ app.post('/generate-image', async (c) => {
 
                 const { prompt, input_image } = await c.req.json();
 
-                // Generate image with Replicate
+                // Translate prompt to English if needed
+                const translatedPrompt = await translatePromptToEnglish(
+                        prompt,
+                        c.env.OPENAI_API_KEY,
+                        c.env.OPENAI_BASE_URL
+                );
+
+                console.log('Original prompt:', prompt);
+                console.log('Translated prompt:', translatedPrompt);
+
+                // Generate image with Replicate using translated prompt
                 const output = await replicate.run(model, {
                         input: {
-                                prompt,
+                                prompt: translatedPrompt,
                                 input_image,
                         },
                 });
 
-                const replicateImageUrl = output as string;
+                const replicateImageUrl = output as unknown as string;
 
                 // Upload to Cloudflare Images for permanent storage
                 const cloudflareImageUrl = await uploadToCloudflareImages(
@@ -84,7 +146,8 @@ app.post('/generate-image', async (c) => {
                 return c.json({ imageUrl: cloudflareImageUrl });
         } catch (error) {
                 console.error('Error in generate-image:', error);
-                return c.json({ error: error.message }, 500);
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                return c.json({ error: errorMessage }, 500);
         }
 });
 

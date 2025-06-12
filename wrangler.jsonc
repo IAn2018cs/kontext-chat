@@ -42,6 +42,8 @@
          * - REPLICATE_API_TOKEN: Your Replicate API token for image generation
          * - CLOUDFLARE_ACCOUNT_ID: Your Cloudflare account ID for Images API
          * - CLOUDFLARE_IMAGES_API_TOKEN: Your Cloudflare Images API token
+         * - OPENAI_API_KEY: Your OpenAI API key for prompt translation (GPT-4o-mini)
+         * - OPENAI_BASE_URL: (Optional) Custom OpenAI API base URL (e.g., for proxy or alternative endpoints)
          *
          * Set these using: wrangler secret put <SECRET_NAME>
          */
