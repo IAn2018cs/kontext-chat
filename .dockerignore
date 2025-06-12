@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Node.js
+node_modules
+npm-debug.log*
+yarn-error.log*
+*.log
+
+# Editor-specific files
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Docker files (usually not needed in the build context itself)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment files (should be passed via docker-compose or other means)
+.env
+.env.*
+!/.env.example
+
+# Build artifacts (if you have a local build step that's not part of the Docker image build)
+# dist
+# build
+.wrangler/

@@ -5,8 +5,6 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 interface Env {
         REPLICATE_API_TOKEN: string;
-        CLOUDFLARE_ACCOUNT_ID: string;
-        CLOUDFLARE_IMAGES_API_TOKEN: string;
         OPENAI_API_KEY: string;
         OPENAI_BASE_URL?: string;
         AWS_ACCESS_KEY_ID: string;
