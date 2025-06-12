@@ -1,23 +1,23 @@
 const starterImages = [
   {
     imageUrl: 'https://replicate.delivery/pbxt/N55l5TWGh8mSlNzW8usReoaNhGbFwvLeZR3TX1NL4pd2Wtfv/replicate-prediction-f2d25rg6gnrma0cq257vdw2n4c.png',
-    suggestedPrompt: 'make it into a 90s cartoon',
+    suggestedPrompt: '把它变成90年代的卡通风格',
   },
   {
     imageUrl: 'https://replicate.delivery/pbxt/N5cepICxyaagdvULl0phi7ImdxuFz05TR2l623zqxhNR9q5Y/van-gogh.jpeg',
-    suggestedPrompt: 'Using this style, a panda astronaut riding a unicorn',
+    suggestedPrompt: '用这种风格画一只熊猫宇航员骑着独角兽',
   },
   {
     imageUrl: 'https://replicate.delivery/xezq/OKWfR6jlQwzekkSsfQOppX55O3vaNv6xZ4qY6RfHjwQHOwDTB/tmp9p3v3brc.png',
-    suggestedPrompt: 'remove the text from the sweatshirt',
+    suggestedPrompt: '移除运动衫上的文字',
   },
   {
     imageUrl: 'https://replicate.delivery/pbxt/N5trWTJCJQbJVWz5nhLEscS1w16r1hGl5zuWceJhVSnWZfGu/mona-lisa-1024.jpg',
-    suggestedPrompt: 'close her eyes',
+    suggestedPrompt: '让她闭上眼睛',
   },
 	{
     imageUrl: 'https://replicate.delivery/mgxm/b033ff07-1d2e-4768-a137-6c16b5ed4bed/d_1.png',
-    suggestedPrompt: 'Convert to a high-quality restoration, enhancing details and removing any damage or degradation',
+    suggestedPrompt: '转换为高质量的修复图，增强细节并移除任何损坏或退化',
   }
 ]
 
@@ -30,7 +30,7 @@ function PoweredByBanner() {
         rel="noopener noreferrer"
         className="underline"
       >
-        Powered by FLUX.1 Kontext on Replicate
+        由 FLUX.1 Kontext on Replicate 驱动
       </a>
     </div>
   );
@@ -134,14 +134,14 @@ function App() {
   // Process uploaded file
   async function handleFile(file) {
     if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file.');
+      alert('请选择有效的图片文件。');
       return;
     }
 
     // Validate file size (10MB limit)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert('Image file is too large. Please select an image under 10MB.');
+      alert('图片文件过大。请选择小于10MB的图片。');
       return;
     }
 
@@ -153,13 +153,13 @@ function App() {
       // Add initial messages
       setMessages([
         { type: 'image', image: url, imageBlob: scaledBlob, from: 'assistant', id: Date.now() },
-        { type: 'text', text: 'Image uploaded! How would you like to edit it?', from: 'system', id: Date.now() + 1 }
+        { type: 'text', text: '图片上传成功！你想怎么编辑它？', from: 'system', id: Date.now() + 1 }
       ]);
 
       // Switch to chat mode
       setShowUpload(false);
     } catch (error) {
-      alert('Failed to process image: ' + error.message);
+      alert('处理图片失败：' + error.message);
     }
   }
 
@@ -173,13 +173,13 @@ function App() {
       // Add image as first message
       setMessages([
         { type: 'image', image: starter.imageUrl, imageBlob: blob, from: 'assistant', id: Date.now() },
-        { type: 'text', text: "Image loaded! Tell me how you'd like to edit it.", from: 'system', id: Date.now() + 1 }
+        { type: 'text', text: "图片加载成功！告诉我你想怎么编辑它。", from: 'system', id: Date.now() + 1 }
       ]);
       setShowUpload(false);
       setInput(starter.suggestedPrompt || '');
       setStarterUsed(true);
     } catch (err) {
-      alert('Failed to load starter image.');
+      alert('加载初始图片失败。');
     } finally {
       setLoading(false);
     }
@@ -237,13 +237,13 @@ function App() {
           if (blob) {
             resolve(blob);
           } else {
-            reject(new Error('Failed to create scaled image'));
+            reject(new Error('创建缩放图片失败'));
           }
         }, 'image/jpeg', 0.9);
       };
 
       img.onerror = () => {
-        reject(new Error('Failed to load image'));
+        reject(new Error('加载图片失败'));
       };
 
       img.src = URL.createObjectURL(file);
@@ -288,16 +288,16 @@ function App() {
       setAbortController(controller);
 
       // Convert blob to data URL for the API
-      console.log('Converting blob to data URL...');
+      console.log('将 blob 转换为 data URL...');
       const imageDataUrl = await blobToDataUrl(lastImageBlob);
-      console.log('Image data URL length:', imageDataUrl.length);
+      console.log('图片 data URL 长度:', imageDataUrl.length);
 
-      console.log('Sending request to /generate-image...');
+      console.log('发送请求到 /generate-image...');
       const requestBody = {
         prompt: input,
         input_image: imageDataUrl
       };
-      console.log('Request body size:', JSON.stringify(requestBody).length);
+      console.log('请求体大小:', JSON.stringify(requestBody).length);
 
       const res = await fetch('/generate-image', {
         method: 'POST',
@@ -351,12 +351,12 @@ function App() {
         setMessages(prev => prev.filter(msg => msg.type !== 'loading'));
         setMessages(prev => [...prev, {
           type: 'text',
-          text: 'Sorry, there was an error generating the image: ' + err.message,
+          text: '抱歉，生成图片时出错：' + err.message,
           from: 'assistant',
           id: Date.now()
         }]);
       } else {
-        console.log('Request was cancelled');
+        console.log('请求已取消');
         setMessages(prev => prev.filter(msg => msg.type !== 'loading'));
       }
     } finally {
@@ -368,11 +368,11 @@ function App() {
 
   // Cancel generation
   function cancelGeneration() {
-    console.log('Cancel generation called');
+    console.log('取消生成已调用');
 
     // Abort the ongoing request
     if (abortController) {
-      console.log('Aborting request...');
+      console.log('正在中止请求...');
       abortController.abort();
       setAbortController(null);
     }
@@ -400,7 +400,7 @@ function App() {
     // Restore the cancelled message to input
     if (lastUserMessage) {
       setTimeout(() => {
-        console.log('Restoring text to input:', lastUserMessage.text);
+        console.log('将文本恢复到输入框:', lastUserMessage.text);
         setInput(lastUserMessage.text);
       }, 50);
     }
@@ -452,14 +452,13 @@ function App() {
             <div className="p-4 md:p-2 bg-white border-b border-gray-200">
               <img src="/kontext-chat-rainbow.png" className="w-1/3 md:w-1/4 mx-auto" alt="Kontext Chat" />
             </div>
-            <PoweredByBanner />
 
             {/* Upload Area */}
             <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto md:overflow-visible pb-32 md:pb-6" style={{paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))'}}>
               {/* Intro Text */}
               <div className="text-center mb-6">
                 <p className="text-gray-700 text-base md:text-lg">
-                  Chat with images to edit them.
+                  通过聊天编辑图片。
                 </p>
               </div>
 
@@ -475,8 +474,8 @@ function App() {
                   <svg className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                   </svg>
-                  <h3 className="text-lg md:text-xl mb-1 md:mb-2 font-semibold">Upload an image to get started</h3>
-                  <p className="text-base md:text-lg opacity-80">Drag and drop an image here, or click to browse</p>
+                  <h3 className="text-lg md:text-xl mb-1 md:mb-2 font-semibold">上传图片开始</h3>
+                  <p className="text-base md:text-lg opacity-80">将图片拖放到此处，或点击浏览</p>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -488,7 +487,7 @@ function App() {
               </div>
 
               {/* Starter Images Section */}
-              <div className="text-center text-gray-600 text-base mb-4 font-medium">Or choose a starting image:</div>
+              <div className="text-center text-gray-600 text-base mb-4 font-medium">或选择一张初始图片：</div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {starterImages.map((starter, idx) => (
                   <button
@@ -507,12 +506,7 @@ function App() {
                 ))}
               </div>
 
-              {/* Footer Text */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <p className="text-gray-600 text-base md:text-lg leading-relaxed text-center">
-                  Kontext Chat is powered by <a href="https://replicate.com/black-forest-labs/flux-kontext-pro?utm_source=project&utm_campaign=kontext-chat" className="underline text-orange-600 hover:text-orange-700">Flux Kontext Pro</a>, a new image model from <a href="https://black-forest-labs.com/" className="underline text-orange-600 hover:text-orange-700">Black Forest Labs</a>, running on <a href="https://replicate.com?utm_source=project&utm_campaign=kontext-chat" className="underline text-orange-600 hover:text-orange-700">Replicate</a>. The app is built with Hono and React, running on <a href="https://workers.dev/" className="underline text-orange-600 hover:text-orange-700">Cloudflare Workers</a>. Learn how to build your own app by taking a look at the <a href="https://github.com/replicate/kontext-chat" className="underline text-orange-600 hover:text-orange-700">source code</a> on GitHub.
-                </p>
-              </div>
+              
             </div>
           </div>
         ) : (
@@ -523,7 +517,7 @@ function App() {
               <button
                 onClick={resetApp}
                 className="absolute left-4 w-8 h-8 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-                title="Back to upload"
+                title="返回上传"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -532,12 +526,11 @@ function App() {
               <img 
                 src="/kontext-chat-rainbow.png" 
                 className="w-1/3 md:w-1/4 mx-auto cursor-pointer hover:opacity-90 transition-opacity" 
-                alt="Kontext Chat" 
+                alt="Kontext 聊天" 
                 onClick={resetApp}
-                title="Back to upload"
+                title="返回上传"
               />
             </div>
-            <PoweredByBanner />
 
             {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-56 md:pb-6" ref={chatContainerRef}>
@@ -558,7 +551,7 @@ function App() {
                     {msg.type === 'image' && (
                       <img
                         src={msg.image}
-                        alt="Generated image"
+                        alt="生成的图片"
                         className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => handleImageClick(msg.image)}
                         onLoad={scrollToBottom}
@@ -567,7 +560,7 @@ function App() {
                     {msg.type === 'loading' && (
                       <div className="flex flex-col items-center gap-4 py-8 px-12">
                         <div className="w-16 h-16 border-4 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div>
-                        <span className="text-gray-600">Generating image...</span>
+                        <span className="text-gray-600">正在生成图片...</span>
                       </div>
                     )}
                     {msg.text && <div className="text-base md:text-lg">{msg.text}</div>}
@@ -577,7 +570,7 @@ function App() {
                       <button
                         onClick={() => deleteFromMessage(msg.id)}
                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-                        title="Delete from here and continue editing"
+                        title="从此处删除并继续编辑"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -597,7 +590,7 @@ function App() {
                     <textarea
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="Describe your edit..."
+                      placeholder="描述你的编辑..."
                       className="w-full bg-transparent border-none outline-none resize-none text-base"
                       rows="1"
                       style={{ minHeight: '24px', maxHeight: '120px' }}
