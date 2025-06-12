@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import Replicate from 'replicate';
 import OpenAI from 'openai';
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 interface Env {
         REPLICATE_API_TOKEN: string;
@@ -8,15 +9,22 @@ interface Env {
         CLOUDFLARE_IMAGES_API_TOKEN: string;
         OPENAI_API_KEY: string;
         OPENAI_BASE_URL?: string;
+        AWS_ACCESS_KEY_ID: string;
+        AWS_SECRET_ACCESS_KEY: string;
+        AWS_REGION: string;
+        AWS_BUCKET_NAME: string;
+        REPLICATE_MODEL: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Helper function to upload image to Cloudflare Images
-async function uploadToCloudflareImages(
+async function uploadToS3(
         imageUrl: string,
-        accountId: string,
-        apiToken: string
+        bucketName: string,
+        region: string,
+        accessKeyId: string,
+        secretAccessKey: string,
+        keyPrefix: string = 'images'
 ): Promise<string> {
         try {
                 // Fetch the image from Replicate
@@ -27,34 +35,47 @@ async function uploadToCloudflareImages(
 
                 const imageBytes = await imageResponse.arrayBuffer();
 
-                // Create form data for upload
-                const formData = new FormData();
-                formData.append('file', new File([imageBytes], 'generated-image.jpg', { type: 'image/jpeg' }));
-
-                // Upload to Cloudflare Images
-                const uploadResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1`, {
-                        method: 'POST',
-                        headers: {
-                                'Authorization': `Bearer ${apiToken}`,
+                // Initialize S3 client
+                const s3Client = new S3Client({
+                        region: region,
+                        credentials: {
+                                accessKeyId: accessKeyId,
+                                secretAccessKey: secretAccessKey,
                         },
-                        body: formData,
                 });
 
-                if (!uploadResponse.ok) {
-                        const errorText = await uploadResponse.text();
-                        throw new Error(`Cloudflare Images upload failed: ${uploadResponse.status} - ${errorText}`);
+                // Generate a unique filename
+                const timestamp = Date.now();
+                const randomString = Math.random().toString(36).substring(2, 15);
+                const fileName = `${keyPrefix}/${timestamp}-${randomString}.jpg`;
+
+                // Upload to S3
+                const uploadCommand = new PutObjectCommand({
+                        Bucket: bucketName,
+                        Key: fileName,
+                        Body: new Uint8Array(imageBytes),
+                        ContentType: 'image/jpeg',
+                        // Optional: Set ACL to public-read if you want the image to be publicly accessible
+                        ACL: 'public-read',
+                });
+
+                const uploadResult = await s3Client.send(uploadCommand);
+
+                if (uploadResult.$metadata.httpStatusCode !== 200) {
+                        throw new Error(`S3 upload failed with status: ${uploadResult.$metadata.httpStatusCode}`);
                 }
 
-                const uploadResult = await uploadResponse.json() as any;
+                // Return the S3 URL for the uploaded image
+                // If using public-read ACL:
+                const s3Url = `https://${bucketName}.s3.${region}.amazonaws.com/${fileName}`;
+                console.log('Image uploaded to S3:', s3Url);
+                return s3Url;
 
-                if (!uploadResult.success) {
-                        throw new Error(`Cloudflare Images upload failed: ${JSON.stringify(uploadResult.errors)}`);
-                }
+                // If bucket is configured with CloudFront or custom domain:
+                // return `https://your-cloudfront-domain.com/${fileName}`;
 
-                // Return the delivery URL for the uploaded image
-                return uploadResult.result.variants[0]; // Get the first variant URL
         } catch (error) {
-                console.error('Error uploading to Cloudflare Images:', error);
+                console.error('Error uploading to S3:', error);
                 throw error;
         }
 }
@@ -110,13 +131,8 @@ async function translatePromptToEnglish(
 
 app.post('/generate-image', async (c) => {
         try {
-                // Require Replicate API token from header
-                const userToken = c.req.header('X-Replicate-Api-Token');
-                if (!userToken) {
-                        return c.json({ error: 'Missing Replicate API token. Please provide it in the X-Replicate-Api-Token header.' }, 400);
-                }
-                const replicate = new Replicate({ auth: userToken });
-                const model = 'black-forest-labs/flux-kontext-pro';
+                const replicate = new Replicate({ auth: c.env.REPLICATE_API_TOKEN });
+                const model = c.env.REPLICATE_MODEL as `${string}/${string}` | `${string}/${string}:${string}`; // Use environment variable with type assertion
 
                 const { prompt, input_image } = await c.req.json();
 
@@ -140,19 +156,49 @@ app.post('/generate-image', async (c) => {
 
                 const replicateImageUrl = output as unknown as string;
 
-                // Upload to Cloudflare Images for permanent storage
-                const cloudflareImageUrl = await uploadToCloudflareImages(
+                // Upload to S3 for permanent storage
+                const s3ImageUrl = await uploadToS3(
                         replicateImageUrl,
-                        c.env.CLOUDFLARE_ACCOUNT_ID,
-                        c.env.CLOUDFLARE_IMAGES_API_TOKEN
+                        c.env.AWS_BUCKET_NAME,
+                        c.env.AWS_REGION,
+                        c.env.AWS_ACCESS_KEY_ID,
+                        c.env.AWS_SECRET_ACCESS_KEY
                 );
 
-                // Return the Cloudflare Images URL instead of the temporary Replicate URL
-                return c.json({ imageUrl: cloudflareImageUrl });
+                // Return the S3 URL
+                return c.json({ imageUrl: s3ImageUrl });
         } catch (error) {
                 console.error('Error in generate-image:', error);
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
                 return c.json({ error: errorMessage }, 500);
+        }
+});
+
+// Add a new route for fetching images to avoid CORS issues
+app.get('/fetch-image', async (c) => {
+        const imageUrl = c.req.query('url');
+        if (!imageUrl) {
+                return c.json({ error: 'Missing image URL' }, 400);
+        }
+
+        try {
+                const response = await fetch(imageUrl);
+                if (!response.ok) {
+                        // MODIFIED: Pass status code directly
+                        return c.json({ error: 'Failed to fetch image' }, response.status as any);
+                }
+                // Ensure the content type is set correctly
+                const newHeaders = new Headers(response.headers);
+                newHeaders.set('Access-Control-Allow-Origin', '*'); // Allow any origin
+
+                return new Response(response.body, {
+                        headers: newHeaders,
+                        status: response.status,
+                });
+        } catch (error) {
+                console.error('Error fetching image:', error);
+                // MODIFIED: Pass status code directly
+                return c.json({ error: 'Failed to fetch image' }, 500 as any);
         }
 });
 

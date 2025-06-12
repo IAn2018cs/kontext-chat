@@ -44,6 +44,11 @@
          * - CLOUDFLARE_IMAGES_API_TOKEN: Your Cloudflare Images API token
          * - OPENAI_API_KEY: Your OpenAI API key for prompt translation (GPT-4o-mini)
          * - OPENAI_BASE_URL: (Optional) Custom OpenAI API base URL (e.g., for proxy or alternative endpoints)
+         * - AWS_ACCESS_KEY_ID: Your AWS Access Key ID for S3
+         * - AWS_SECRET_ACCESS_KEY: Your AWS Secret Access Key for S3
+         * - AWS_REGION: The AWS region for your S3 bucket
+         * - AWS_BUCKET_NAME: The name of your S3 bucket
+         * - REPLICATE_MODEL: The Replicate model to use for image generation
          *
          * Set these using: wrangler secret put <SECRET_NAME>
          */
