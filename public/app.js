@@ -52,9 +52,9 @@ function App() {
   // Initialize theme from localStorage
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    // 默认使用暗色主题，除非用户明确保存了亮色主题设置
-    const shouldBeDark = savedTheme === 'light' ? false : true;
-    
+    // 默认使用亮色主题，除非用户明确保存了暗色主题设置
+    const shouldBeDark = savedTheme === 'dark' ? true : false;
+
     setIsDarkMode(shouldBeDark);
     if (shouldBeDark) {
       document.documentElement.classList.add('dark');
@@ -139,6 +139,14 @@ function App() {
         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }, 50);
     }
+  }
+
+  // Helper to handle image load completion
+  function handleImageLoad(messageId) {
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId ? { ...msg, imageLoading: false } : msg
+    ));
+    scrollToBottom();
   }
 
   // Drag and drop handlers for upload area
@@ -374,10 +382,10 @@ function App() {
       const imageBlob = await imageResponse.blob();
       console.log('Image blob size:', imageBlob.size);
 
-      // Replace loading with image (store blob in message)
+      // Replace loading with image placeholder first
       setMessages(prev => prev.map(msg =>
         msg.type === 'loading' ?
-          { type: 'image', image: imageUrl, imageBlob: imageBlob, from: 'assistant', id: msg.id } :
+          { type: 'image', image: imageUrl, imageBlob: imageBlob, from: 'assistant', id: msg.id, imageLoading: true } :
           msg
       ));
 
@@ -526,18 +534,15 @@ function App() {
             <div className="flex-1 flex flex-col p-6 md:p-8 overflow-y-auto md:overflow-visible pb-32 md:pb-8 fade-in" style={{paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))', animationDelay: '0.1s'}}>
               {/* Intro Text */}
               <div className="text-center mb-8 fade-in" style={{animationDelay: '0.2s'}}>
-                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-3">
-                  AI 图片编辑器
-                </h1>
                 <p className="text-gray-600 text-lg md:text-xl font-medium">
-                  通过聊天编辑图片，让AI帮你实现创意想法
+                  通过聊天编辑图片，由 FLUX.1 Kontext on Replicate 提供支持。
                 </p>
               </div>
 
               {/* Model Selection */}
               <div className="mb-8 fade-in" style={{animationDelay: '0.3s'}}>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  选择AI模型
+                  选择 Flux 模型
                 </label>
                 {modelsLoading ? (
                   <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 text-center text-gray-500 border border-gray-200 pulse-glow">
@@ -648,7 +653,11 @@ function App() {
                   style={{animationDelay: `${index * 0.1}s`}}
                 >
                   <div
-                    className={`relative max-w-sm md:max-w-4xl transition-all duration-300 hover:scale-[1.02] ${
+                    className={`relative transition-all duration-300 hover:scale-[1.02] ${
+                      msg.type === 'image' 
+                        ? 'w-[40%]'
+                        : 'max-w-sm md:max-w-4xl'
+                    } ${
                       msg.from === 'user'
                         ? 'bg-gradient-to-br from-blue-500 via-purple-500 to-purple-600 text-white rounded-3xl px-5 py-4 shadow-lg hover:shadow-xl'
                         : msg.from === 'system'
@@ -658,17 +667,29 @@ function App() {
                   >
                     {msg.type === 'image' && (
                       <div className="relative group cursor-pointer" onClick={() => handleImageClick(msg.image)}>
+                        {msg.imageLoading && (
+                          <div className="w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center animate-pulse">
+                            <div className="text-center">
+                              <div className="w-16 h-16 border-4 border-gray-300 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+                              <span className="text-gray-500 text-sm">图片加载中...</span>
+                            </div>
+                          </div>
+                        )}
                         <img
                           src={msg.image}
                           alt="生成的图片"
-                          className="max-w-xs md:max-w-2xl rounded-xl hover:opacity-95 transition-all duration-300 shadow-lg group-hover:shadow-xl"
-                          onLoad={scrollToBottom}
+                          className={`w-full rounded-xl transition-all duration-500 shadow-lg group-hover:shadow-xl ${
+                            msg.imageLoading ? 'opacity-0 absolute inset-0 pointer-events-none' : 'opacity-100 hover:opacity-95'
+                          }`}
+                          onLoad={() => handleImageLoad(msg.id)}
                         />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-all duration-300 flex items-center justify-center pointer-events-none">
-                          <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                          </svg>
-                        </div>
+                        {!msg.imageLoading && (
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-all duration-300 flex items-center justify-center pointer-events-none">
+                            <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                          </div>
+                        )}
                       </div>
                     )}
                     {msg.type === 'loading' && (
@@ -679,7 +700,7 @@ function App() {
                         </div>
                         <div className="text-center">
                           <span className="text-gray-700 font-medium text-lg">正在生成图片...</span>
-                          <div className="text-gray-500 text-sm mt-1">请稍候，AI正在为您创作</div>
+                          <div className="text-gray-500 text-sm mt-1">请稍候，正在为您创作</div>
                         </div>
                       </div>
                     )}
